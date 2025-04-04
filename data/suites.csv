@@ -1,0 +1,6 @@
+"Status","Start Time","Stop Time","Duration in ms","Parent Suite","Suite","Sub Suite","Test Class","Test Method","Name","Description"
+"broken","Fri Apr 04 22:05:57 GMT 2025","Fri Apr 04 22:05:57 GMT 2025","2","API Tests Suite","Entity API Tests","tests.EntityApiTest","tests.EntityApiTest","testDeleteEntity","testDeleteEntity","Проверка удаления сущности"
+"broken","Fri Apr 04 22:05:56 GMT 2025","Fri Apr 04 22:05:57 GMT 2025","742","API Tests Suite","Entity API Tests","tests.EntityApiTest","tests.EntityApiTest","testCreateEntity","testCreateEntity","Проверка создания сущности с валидными данными"
+"broken","Fri Apr 04 22:05:57 GMT 2025","Fri Apr 04 22:05:57 GMT 2025","30","API Tests Suite","Entity API Tests","tests.EntityApiTest","tests.EntityApiTest","testGetAllEntities","testGetAllEntities","Проверка получения списка сущностей с пагинацией"
+"broken","Fri Apr 04 22:05:57 GMT 2025","Fri Apr 04 22:05:57 GMT 2025","5","API Tests Suite","Entity API Tests","tests.EntityApiTest","tests.EntityApiTest","testGetEntity","testGetEntity","Проверка получения данных созданной сущности"
+"broken","Fri Apr 04 22:05:57 GMT 2025","Fri Apr 04 22:05:57 GMT 2025","3","API Tests Suite","Entity API Tests","tests.EntityApiTest","tests.EntityApiTest","testUpdateEntity","testUpdateEntity","Проверка обновления данных сущности"

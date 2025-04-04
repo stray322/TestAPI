@@ -1,0 +1,2 @@
+Тестовый объект:
+EntityRequest{title='Test Entity 1743804356583', verified=true, importantNumbers=[4, 5, 6], addition=Addition{additionalInfo='Обновленная информация', additionalNumber=100}}

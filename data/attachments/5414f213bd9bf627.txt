@@ -1,0 +1,1 @@
+Addition{additionalInfo='Обновленная информация', additionalNumber=100}
