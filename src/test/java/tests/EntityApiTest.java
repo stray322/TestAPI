@@ -1,168 +1,157 @@
 package tests;
 
 import io.qameta.allure.*;
+import models.AdditionRequest;
 import models.EntityRequest;
-import models.EntityResponse;
-import io.restassured.response.Response;
+import org.testng.annotations.AfterClass;
+import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
-import utils.DataGenerator;
-import static io.restassured.RestAssured.given;
-import static org.testng.Assert.*;
+import utils.APIEndpoints;
 
-/**
- * Набор тестов для проверки CRUD-операций с сущностями через API.
- * <p>
- * Тест-кейсы выполняются в строгом порядке:
- * 1. Создание сущности
- * 2. Чтение сущности
- * 3. Обновление сущности
- * 4. Чтение всех сущностей
- * 5. Удаление сущности
- */
+import java.util.List;
+
+import static io.restassured.RestAssured.given;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.notNullValue;
+import static org.testng.Assert.assertTrue;
+
 @Epic("API Тесты для работы с сущностями")
 @Feature("CRUD операций с сущностями")
-public class EntityApiTest extends BaseTest{
-    private Integer createdEntityId;
+public class EntityApiTest extends BaseTest {
+    private Integer entityId;
+    private EntityRequest testEntity;
 
-    /**
-     * Тест создания новой сущности.
-     * <p>
-     * Проверяет:
-     * - Корректность HTTP-статуса (200 OK)
-     * - Наличие ID в ответе сервера
-     * - Соответствие структуры ответа
-     */
-    @Test(priority = 1)
+    @BeforeClass
+    public void setupTestData() {
+        testEntity = EntityRequest.builder()
+                .title("Test Entity " + System.currentTimeMillis())
+                .verified(true)
+                .importantNumbers(List.of(1, 2, 3))
+                .addition(AdditionRequest.builder()
+                        .additionalInfo("Тестовые данные")
+                        .additionalNumber(42)
+                        .build())
+                .build();
+    }
+
+    @Test
     @Story("Создание сущности")
     @Severity(SeverityLevel.BLOCKER)
-    @Description("Проверка создания сущности с валидными данными")
-    public void testCreateEntity() {
-        EntityRequest request = DataGenerator.generateEntityRequest();
-        Allure.addAttachment("Тестовые данные", request.toString());
-
-        Response response = given()
+    @Description("Проверка создания новой сущности")
+    public void createEntityTest() {
+        entityId = Integer.parseInt(given()
                 .spec(requestSpec)
-                .body(request)
+                .body(testEntity)
                 .when()
-                .post("/create");
-
-        createdEntityId = Integer.parseInt(response.body().asString());
-        Allure.addAttachment("Созданная сущность", "ID: " + createdEntityId);
-
-        assertEquals(response.getStatusCode(), 200, "Неверный статус-код");
-        assertNotNull(createdEntityId, "ID сущности не был получен");
+                .post(APIEndpoints.CREATE_ENDPOINT)
+                .then()
+                .assertThat()
+                .statusCode(200)
+                .body(notNullValue())
+                .extract()
+                .body()
+                .asString());
     }
 
-    /**
-     * Тест получения данных сущности.
-     * <p>
-     * Проверяет:
-     * - Корректность HTTP-статуса (200 OK)
-     * - Наличие обязательных полей в ответе
-     */
-    @Test(priority = 2)
+    @Test(dependsOnMethods = "createEntityTest", alwaysRun = true)
     @Story("Чтение сущности")
     @Severity(SeverityLevel.CRITICAL)
-    @Description("Проверка получения данных созданной сущности")
-    public void testGetEntity() {
-        Response response = given()
+    @Description("Проверка получения данных сущности")
+    public void getEntityTest() {
+        given()
                 .spec(requestSpec)
-                .pathParam("id", createdEntityId)
+                .pathParam("id", entityId)
                 .when()
-                .get("/get/{id}");
-
-        EntityResponse entity = response.as(EntityResponse.class);
-        Allure.addAttachment("Полученные данные", entity.toString());
-
-        assertEquals(response.getStatusCode(), 200, "Неверный статус-код");
-        assertEquals(entity.getId(), createdEntityId, "ID не совпадает");
-        assertNotNull(entity.getTitle(), "Title должен быть заполнен");
+                .get(APIEndpoints.GET_ENDPOINT)
+                .then()
+                .assertThat()
+                .statusCode(200)
+                .body("title", equalTo(testEntity.getTitle()))
+                .body("verified", equalTo(testEntity.isVerified()))
+                .body("addition.id", equalTo(entityId));
     }
 
-    /**
-     * Тест обновления сущности.
-     * <p>
-     * Проверяет:
-     * - Корректность HTTP-статуса (204 No Content)
-     * - Фактическое обновление данных
-     */
-    @Test(priority = 3)
+    @Test(dependsOnMethods = "createEntityTest")
     @Story("Обновление сущности")
     @Severity(SeverityLevel.NORMAL)
     @Description("Проверка обновления данных сущности")
-    public void testUpdateEntity() {
-        EntityRequest updateRequest = DataGenerator.generateEntityRequest();
-        Allure.addAttachment("Новые данные", updateRequest.toString());
+    public void updateEntityTest() {
+        EntityRequest updateData = testEntity.toBuilder()
+                .title("Обновленный заголовок")
+                .verified(false)
+                .build();
 
         given()
                 .spec(requestSpec)
-                .pathParam("id", createdEntityId)
-                .body(updateRequest)
-                .when()
-                .patch("/patch/{id}")
+                .pathParam("id", entityId)
+                .body(updateData)
+                .log().all()
+                .patch(APIEndpoints.UPDATE_ENDPOINT)
                 .then()
+                .log().all()
                 .statusCode(204);
 
-        // Проверка актуальных данных
-        EntityResponse updatedEntity = given()
+        given()
                 .spec(requestSpec)
-                .pathParam("id", createdEntityId)
-                .get("/get/{id}")
-                .as(EntityResponse.class);
-
-        assertEquals(updatedEntity.getTitle(), updateRequest.getTitle(), "Заголовок не обновился");
-        Allure.addAttachment("Актуальные данные", updatedEntity.toString());
+                .pathParam("id", entityId)
+                .get(APIEndpoints.GET_ENDPOINT)
+                .then()
+                .body("title", equalTo("Обновленный заголовок"))
+                .body("verified", equalTo(false))
+                .body("addition.id", equalTo(entityId));
     }
 
-    /**
-     * Тест получения списка сущностей.
-     * <p>
-     * Проверяет:
-     * - Корректность HTTP-статуса (200 OK)
-     * - Наличие пагинации в ответе
-     */
-    @Test(priority = 4)
-    @Story("Чтение списка сущностей")
-    @Severity(SeverityLevel.NORMAL)
-    @Description("Проверка получения списка сущностей с пагинацией")
-    public void testGetAllEntities() {
-        Response response = given()
-                .spec(requestSpec)
-                .queryParam("page", 1)
-                .queryParam("perPage", 10)
-                .when()
-                .get("/getAll");
-
-        Allure.addAttachment("Ответ сервера", response.getBody().asString());
-        assertEquals(response.getStatusCode(), 200, "Неверный статус-код");
-    }
-
-    /**
-     * Тест удаления сущности.
-     * <p>
-     * Проверяет:
-     * - Корректность HTTP-статуса (204 No Content)
-     * - Фактическое удаление сущности
-     */
-    @Test(priority = 5)
+    @Test(dependsOnMethods = {"createEntityTest", "getEntityTest"})
     @Story("Удаление сущности")
     @Severity(SeverityLevel.CRITICAL)
     @Description("Проверка удаления сущности")
-    public void testDeleteEntity() {
+    public void deleteEntityTest() {
+        createEntityTest();
         given()
                 .spec(requestSpec)
-                .pathParam("id", createdEntityId)
-                .when()
-                .delete("/delete/{id}")
+                .pathParam("id", entityId)
+                .delete(APIEndpoints.DELETE_ENDPOINT)
                 .then()
                 .statusCode(204);
 
-        // Проверка отсутствия сущности
-        Response response = given()
-                .spec(requestSpec)
-                .pathParam("id", createdEntityId)
-                .get("/get/{id}");
 
-        Allure.addAttachment("Ответ при проверке удаления", response.getBody().asString());
+        given()
+                .spec(requestSpec)
+                .pathParam("id", entityId)
+                .get(APIEndpoints.GET_ENDPOINT)
+                .then()
+                .statusCode(500);
+    }
+
+    @Test
+    @Story("Список сущностей")
+    @Severity(SeverityLevel.MINOR)
+    @Description("Проверка получения списка сущностей")
+    public void getAllEntitiesTest() {
+        createEntityTest();
+        Integer count = given()
+                .spec(requestSpec)
+                .queryParam("page", 1)
+                .queryParam("limit", 10)
+                .when()
+                .get(APIEndpoints.GET_ALL_ENDPOINT)
+                .then()
+                .assertThat()
+                .statusCode(200)
+                .extract()
+                .jsonPath()
+                .getList("entity.id")
+                .size();
+        assertTrue(count > 0, "Список сущностей пуст");
+    }
+
+    @AfterClass
+    public void cleanupTestData() {
+        if (entityId != null) {
+            given()
+                    .spec(requestSpec)
+                    .pathParam("id", entityId)
+                    .delete(APIEndpoints.DELETE_ENDPOINT);
+        }
     }
 }

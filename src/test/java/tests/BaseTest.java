@@ -36,9 +36,8 @@ public class BaseTest{
      * 1. Настройку базовых параметров запроса
      * 2. Логирование параметров в Allure-отчёт
      */
-    @BeforeClass
+    @BeforeClass(description = "Настройка базовой спецификации запроса")
     public void setup() {
-        Allure.step("Настройка базовой спецификации запроса");
         configureRequestSpec();
         logSpecDetailsToAllure();
     }
