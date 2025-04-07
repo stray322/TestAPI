@@ -14,6 +14,8 @@ jobs:
       # Шаг 1: Клонирование репозитория
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          repository: https://github.com/sun6r0/test-service.git
 
       # Шаг 2: Установка Java и Maven
       - name: Set up JDK 17
