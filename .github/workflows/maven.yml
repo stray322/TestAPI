@@ -25,8 +25,19 @@ jobs:
           distribution: 'temurin'
 
       # Шаг 3: Запуск контейнеров
-      - name: Start Docker containers
-        run: docker-compose up --build -d
+      - name: Install Docker
+        run: |
+            sudo apt-get update
+            sudo apt-get install -y docker.io docker-compose
+
+            - name: Configure Docker permissions
+              run: |
+                sudo groupadd docker || true
+                sudo usermod -aG docker $USER
+
+            - name: Start services
+              working-directory: ./test-service
+              run: docker-compose up --build -d
 
       # Шаг 4: Ожидание готовности сервиса (пример для порта 8080)
       - name: Wait for service to be ready
